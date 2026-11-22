@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Overridable with the CATALOGUE_API_BASE_URL environment variable in the scheme. -->
+	<key>CatalogueAPIBaseURL</key>
+	<string>http://localhost:3000/api/v1</string>
+	<!-- Allow plain HTTP only to local addresses (the dev backend); everything else stays HTTPS. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+</dict>
+</plist>
