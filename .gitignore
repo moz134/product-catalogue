@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.env
+*.log
+coverage/
+.DS_Store
+.claude/settings.local.json
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+apps/ios/build/
+*.xcresult
+
+# Local machine setup (e.g. corporate proxy certificates); never commit
+docker-compose.override.yml
+.local-certs/
