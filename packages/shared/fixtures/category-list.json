@@ -1,0 +1,8 @@
+{
+  "items": [
+    { "slug": "electronics", "name": "Electronics" },
+    { "slug": "jewelery", "name": "Jewelery" },
+    { "slug": "mens-clothing", "name": "Men's clothing" },
+    { "slug": "womens-clothing", "name": "Women's clothing" }
+  ]
+}

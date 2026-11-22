@@ -1,0 +1,25 @@
+{
+  "category": { "slug": "electronics", "name": "Electronics" },
+  "topRated": [
+    {
+      "id": "9",
+      "title": "WD 2TB Elements Portable External Hard Drive - USB 3.0",
+      "description": "USB 3.0 and USB 2.0 compatibility; fast data transfers.",
+      "price": { "amount": 64, "currency": "USD" },
+      "imageUrl": "https://fakestoreapi.com/img/61IBBVJvSDL._AC_SY879_t.png",
+      "category": { "slug": "electronics", "name": "Electronics" },
+      "rating": { "average": 3.3, "count": 203 }
+    }
+  ],
+  "others": [
+    {
+      "id": "10",
+      "title": "SanDisk SSD PLUS 1TB Internal SSD - SATA III 6 Gb/s",
+      "description": "Easy upgrade for faster boot up, shutdown, application load and response.",
+      "price": { "amount": 109, "currency": "USD" },
+      "imageUrl": "https://fakestoreapi.com/img/61U7T1koQqL._AC_SX679_t.png",
+      "category": { "slug": "electronics", "name": "Electronics" },
+      "rating": { "average": 2.9, "count": 470 }
+    }
+  ]
+}

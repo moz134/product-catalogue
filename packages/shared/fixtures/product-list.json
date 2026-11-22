@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": "1",
+      "title": "Fjallraven - Foldsack No. 1 Backpack, Fits 15 Laptops",
+      "description": "Your perfect pack for everyday use and walks in the forest.",
+      "price": { "amount": 109.95, "currency": "USD" },
+      "imageUrl": "https://fakestoreapi.com/img/81fPKd-2AYL._AC_SL1500_t.png",
+      "category": { "slug": "mens-clothing", "name": "Men's clothing" },
+      "rating": { "average": 3.9, "count": 120 }
+    },
+    {
+      "id": "9",
+      "title": "WD 2TB Elements Portable External Hard Drive - USB 3.0",
+      "description": "USB 3.0 and USB 2.0 compatibility; fast data transfers.",
+      "price": { "amount": 64, "currency": "USD" },
+      "imageUrl": "https://fakestoreapi.com/img/61IBBVJvSDL._AC_SY879_t.png",
+      "category": { "slug": "electronics", "name": "Electronics" },
+      "rating": { "average": 3.3, "count": 203 }
+    }
+  ]
+}
