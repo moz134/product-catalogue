@@ -1,0 +1,31 @@
+# API: http://localhost:3000/api/v1 · Sales inbox (Mailpit): http://localhost:8025
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      FEATURED_PRODUCT_IDS: ${FEATURED_PRODUCT_IDS:-1,5,9,13,18}
+      # Production default is 5; higher locally so the test commands can run back to back.
+      ENQUIRY_RATE_LIMIT_PER_MINUTE: ${ENQUIRY_RATE_LIMIT_PER_MINUTE:-30}
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mailpit
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - '8025:8025'
+    restart: unless-stopped

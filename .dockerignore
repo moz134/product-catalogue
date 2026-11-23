@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/.env
+.env
+.git
+apps/ios
+**/*.log
+.local-certs
+docker-compose.override.yml

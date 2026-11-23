@@ -1,0 +1,543 @@
+{
+  "info": {
+    "_postman_id": "6f1c1b7e-2d0a-4a51-9a0e-0c6d6a7c1a01",
+    "name": "Product Catalogue API",
+    "description": "Every endpoint of the catalogue backend, with tests on each request.\n\n1. Start the backend: `npm run dev` (or `docker compose up --build`).\n2. Import this file, then **Run collection** (or send requests one by one).\n\n`baseUrl` defaults to `http://localhost:3000`. Change it in the collection's Variables tab to point somewhere else.\n\nNote: enquiries are rate-limited to 5 per minute per IP, and one run sends 4. Wait a minute between full runs, or you'll get `429 RATE_LIMITED`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "categorySlug",
+      "value": "electronics"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Reports ok\", () => pm.expect(pm.response.json().status).to.eql(\"ok\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/health",
+            "description": "Liveness check used by Docker and load balancers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalogue",
+      "item": [
+        {
+          "name": "Home: featured (top rated) products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(p) {",
+                  "  pm.expect(p).to.include.keys(\"id\", \"title\", \"description\", \"price\", \"imageUrl\", \"category\", \"rating\");",
+                  "  pm.expect(p.id).to.be.a(\"string\");",
+                  "  pm.expect(p.price.amount).to.be.a(\"number\");",
+                  "  pm.expect(p.price.currency).to.have.lengthOf(3);",
+                  "  pm.expect(p.category).to.include.keys(\"slug\", \"name\");",
+                  "}",
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().items;",
+                  "pm.test(\"Returns exactly 5 products\", () => pm.expect(items).to.have.lengthOf(5));",
+                  "pm.test(\"Products match the contract\", () => items.forEach(expectProduct));",
+                  "pm.test(\"Cacheable for 60 seconds\", () => pm.expect(pm.response.headers.get(\"Cache-Control\")).to.eql(\"public, max-age=60\"));",
+                  "pm.collectionVariables.set(\"productId\", items[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products/featured",
+            "description": "Acceptance criterion: the home page shows the 5 products the owner chose (FEATURED_PRODUCT_IDS). Saves the first id as {{productId}} for later requests."
+          }
+        },
+        {
+          "name": "Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().items;",
+                  "pm.test(\"Has categories with slug and name\", () => {",
+                  "  pm.expect(items).to.not.be.empty;",
+                  "  items.forEach((c) => pm.expect(c).to.have.keys(\"slug\", \"name\"));",
+                  "});",
+                  "pm.collectionVariables.set(\"categorySlug\", items[0].slug);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/categories",
+            "description": "Category links. Saves the first slug as {{categorySlug}}."
+          }
+        },
+        {
+          "name": "Category page: top rated + more",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const slug = pm.collectionVariables.get(\"categorySlug\");",
+                  "pm.test(\"Has top rated and other products\", () => {",
+                  "  pm.expect(body.topRated).to.not.be.empty;",
+                  "  pm.expect(body.others).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Every product is in this category\", () => {",
+                  "  [...body.topRated, ...body.others].forEach((p) => pm.expect(p.category.slug).to.eql(slug));",
+                  "});",
+                  "pm.test(\"No product appears twice\", () => {",
+                  "  const ids = [...body.topRated, ...body.others].map((p) => p.id);",
+                  "  pm.expect(new Set(ids).size).to.eql(ids.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/categories/{{categorySlug}}/products",
+            "description": "Acceptance criterion: a category shows its top rated products, then additional products."
+          }
+        },
+        {
+          "name": "Search: matching products only",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().items;",
+                  "pm.test(\"Finds something\", () => pm.expect(items).to.not.be.empty);",
+                  "pm.test(\"Every result contains the term\", () => {",
+                  "  items.forEach((p) => {",
+                  "    const text = `${p.title} ${p.description} ${p.category.name}`.toLowerCase();",
+                  "    pm.expect(text).to.include(\"ssd\");",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products?search=ssd",
+            "description": "Acceptance criterion: search only returns products whose text matches the term (case-insensitive; title, description, category)."
+          }
+        },
+        {
+          "name": "Search: no matches",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Empty list\", () => pm.expect(pm.response.json().items).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products?search=unicorn",
+            "description": ""
+          }
+        },
+        {
+          "name": "Search: blank term is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is VALIDATION_ERROR\", () => pm.expect(body.error.code).to.eql(\"VALIDATION_ERROR\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products?search=%20%20",
+            "description": ""
+          }
+        },
+        {
+          "name": "All products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns products\", () => pm.expect(pm.response.json().items).to.not.be.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products",
+            "description": ""
+          }
+        },
+        {
+          "name": "Product details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function expectProduct(p) {",
+                  "  pm.expect(p).to.include.keys(\"id\", \"title\", \"description\", \"price\", \"imageUrl\", \"category\", \"rating\");",
+                  "  pm.expect(p.id).to.be.a(\"string\");",
+                  "  pm.expect(p.price.amount).to.be.a(\"number\");",
+                  "  pm.expect(p.price.currency).to.have.lengthOf(3);",
+                  "  pm.expect(p.category).to.include.keys(\"slug\", \"name\");",
+                  "}",
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const product = pm.response.json();",
+                  "pm.test(\"Matches the contract\", () => expectProduct(product));",
+                  "pm.test(\"Is the requested product\", () => pm.expect(product.id).to.eql(pm.collectionVariables.get(\"productId\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products/{{productId}}",
+            "description": "Acceptance criterion: tapping a product tile shows its details."
+          }
+        },
+        {
+          "name": "Product not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is NOT_FOUND\", () => pm.expect(body.error.code).to.eql(\"NOT_FOUND\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/products/999",
+            "description": ""
+          }
+        },
+        {
+          "name": "Category not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is NOT_FOUND\", () => pm.expect(body.error.code).to.eql(\"NOT_FOUND\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/categories/garden/products",
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enquiry",
+      "item": [
+        {
+          "name": "Send an enquiry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 202 Accepted\", () => pm.response.to.have.status(202));",
+                  "const reference = pm.response.json().reference;",
+                  "pm.test(\"Returns a reference id\", () => pm.expect(reference).to.match(/^[0-9a-f-]{36}$/));",
+                  "pm.collectionVariables.set(\"lastReference\", reference);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/enquiries",
+            "description": "Acceptance criterion: the sales inbox receives an email. Look for it in Mailpit (http://localhost:8025) with Docker, or in the backend's terminal with `npm run dev`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"name\": \"Ada Lovelace\",\n  \"email\": \"ada@example.com\",\n  \"phone\": \"+44 20 1234 5678\",\n  \"message\": \"Is this in stock?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Enquiry: validation errors",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is VALIDATION_ERROR\", () => pm.expect(body.error.code).to.eql(\"VALIDATION_ERROR\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);",
+                  "pm.test(\"Explains each bad field\", () => {",
+                  "  pm.expect(body.error.fields).to.have.property(\"name\");",
+                  "  pm.expect(body.error.fields.email[0]).to.eql(\"Please enter a valid email address\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/enquiries",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"name\": \"\",\n  \"email\": \"not-an-email\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Enquiry: unknown product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is NOT_FOUND\", () => pm.expect(body.error.code).to.eql(\"NOT_FOUND\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/enquiries",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"999\",\n  \"name\": \"Ada\",\n  \"email\": \"ada@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Enquiry: malformed JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Error code is VALIDATION_ERROR\", () => pm.expect(body.error.code).to.eql(\"VALIDATION_ERROR\"));",
+                  "pm.test(\"Error has a readable message\", () => pm.expect(body.error.message).to.be.a(\"string\").and.not.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/enquiries",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Ada\", ",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
