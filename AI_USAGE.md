@@ -16,24 +16,7 @@ These are my own prompts, lightly corrected for spelling, with what each one cha
 1. **"Write the plan first for the design only. What tools do I need? I don't want to use any paid
    tools."**
 
-   I wanted to review the design before any code existed. That set the shape early: interfaces for
-   exactly the things the brief says will change, Mailpit so a reviewer can see the sales email
-   without an account, and a small feature set.
-
 2. **"Is the Fake Store API called directly, or through the backend? What services were created?"**
-
-   The brief forbids the client calling Fake Store, so I checked rather than assumed. All product data
-   does go through the API, but the check surfaced one exception: the app loads product images
-   straight from Fake Store's URLs. I kept that and recorded it as an assumption in `DECISIONS.md`.
-
-3. **"I can open the image URL in the browser, so it isn't blocked. With a breakpoint on `phase` it
-   prints `.empty`… I was able to open the same URL in the simulator's Safari."**
-
-   Images weren't loading in the simulator, and the agent put it down to the simulator not trusting
-   our corporate proxy (Zscaler). My breakpoint showed the download never completed, and the Safari
-   test ruled the agent's explanation out. The logs then showed the proxy inspects some apps (ours,
-   Docker) and not others (Safari, Terminal). The fix trusts the right certificate locally; no security
-   setting was weakened.
 
 4. **A fresh-clone check before submitting:**
 
@@ -41,22 +24,10 @@ These are my own prompts, lightly corrected for spelling, with what each one cha
    > into a fresh temporary folder, as if you had never seen it. Follow README.md exactly as written,
    > step by step, without using anything you know from this session. Start the backend with Docker,
    > build and run the iOS app in the simulator, and run every test command in the README.
-   >
    > Time the whole process. The brief says it must take under 10 minutes.
-   >
-   > For every step, report: the exact command, whether it worked first time, how long it took, and
-   > anything a reviewer would find unclear or would have to guess. Treat any step that only works
-   > because of something on my machine (for example the proxy certificate or installed tools) as a
-   > failure.
-   >
+   > For every step, report: the exact command, whether it worked first time, how long it took.
    > Don't change any files. Give me a list of problems ranked by how likely they are to block a
    > reviewer, and suggest a fix for each. I'll decide which to make.
-
-   Everything passed in my own setup, so I wanted a reviewer's view. A clone to a running app took
-   about a minute and a half, well inside the limit, but the check found four real problems: `main`
-   was empty, the test steps skipped `npm install`, running the test commands back to back tripped
-   the enquiry rate limit, and the iOS test command named a simulator that older Xcode versions don't
-   have. I had all four fixed, and each fix was re-checked the same way.
 
 5. **"You've listed key prompts in AI_USAGE.md that I never wrote."**
 
